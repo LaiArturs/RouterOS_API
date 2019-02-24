@@ -1,0 +1,15 @@
+routeros_api.py  -  Design Doc
+
+Features:
+ - Standard API notation;
+ - SSL;
+ - Log;
+ - Verbose;
+ - Re-login and auto re-login;
+ - Close connection.
+
+Class:
+    Api:
+     - login();
+     - send();
+     - close().
