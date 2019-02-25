@@ -60,18 +60,70 @@ class Api:
         self.open_socket()
 
     def communicate(self, sentence):
-        # CONTINUE HERE
-        pass
+
+        def read_sentence():
+            rcv_sentence = []  # Words will be appended here
+            rcv_length = int.from_bytes(self.sock.recv(1), byteorder='big')  # Receive the length of the next word
+            trap = False  # This variable will change if there is !trap error occurred
+            while rcv_length != 0:
+                received = ''
+                while rcv_length > len(received):
+                    rec = self.sock.recv(rcv_length - len(received))
+                    if rec == b'':
+                        raise RuntimeError('socket connection broken')
+
+                    # If API word from Router is too big (>127) it will send total length of
+                    # the word in begining of the first part. Because of this it can't be decoded
+                    # with .decode('utf-8').
+                    try:
+                        rec = rec.decode('utf-8')
+                    except:
+                        rcv_length = int.from_bytes(rec[:1], byteorder='big')
+                        rec = rec[1:].decode('utf-8')
+                    received += rec
+                # print('<<< ', received)
+                if trap:  # If !trap (error) in previous word return what was the error
+                    return 'Error: RouterOS API replied: ' + received.split('=')[2]
+                if received == '!trap':  # Some error occurred
+                    trap = True
+                rcv_sentence.append(received)
+                rcv_length = int.from_bytes(self.sock.recv(1), byteorder='big')
+            # print('')
+            return rcv_sentence
+
+        # Sending part of conversation
+
+        # Each word must be sent separately.
+        # First, length of the word must be sent,
+        # Then, the word itself.
+        for word in sentence:
+            length = len(word).to_bytes(1, byteorder='big')
+            self.sock.sendall(length)  # Sending the length of following word
+            self.sock.sendall(word.encode('utf-8'))  # Sending the word
+        self.sock.sendall(b'\x00')  # Zero length word to mark end of the sentence
+
+        # Receiving part of the conversation
+
+        # Will continue receiving until receives '!done' or some kind of error.
+        # Everything will be appended to paragraph variable, and then returned.
+        paragraph = []
+        while sentence[0] != '!done':
+            sentence = read_sentence()
+            if 'Error' in sentence:
+                return sentence
+            paragraph.append(sentence)
+        return paragraph
 
     def login(self):
+
         sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
         reply = self.communicate(sentence)
+
         if len(reply[0]) == 1 and reply[0][0] == '!done':
             return reply
         elif 'Error' in reply:
             return reply
         elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
-
             # If RouterOS uses old API login method, code continues with old method
             # print('Old API')
             md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
