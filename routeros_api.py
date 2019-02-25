@@ -125,15 +125,38 @@ class Api:
             return reply
         elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
             # If RouterOS uses old API login method, code continues with old method
-            # print('Old API')
             md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
             md5.update(binascii.unhexlify(reply[0][1][5:]))
             sentence = ['/login', '=name=' + self.user, '=response=00'
                         + binascii.hexlify(md5.digest()).decode('utf-8')]
             return self.communicate(sentence)
 
-    def send(self):
-        pass
+    def talk(self, message):
+        reply = self.login()
+        if 'Error' in reply:
+            return reply
+
+        # It is possible for message to be string or list containing multiple strings
+        if type(message) == str:
+            return self.send(message)
+        elif type(message) == list:
+            reply = []
+            for sentence in message:
+                reply.append(self.send(sentence))
+            return reply
+
+    def send(self, sentence):
+        reply = self.communicate(sentence.split())
+        if 'Error' in reply:
+            return reply
+        # reply is list containing strings with RAW output form API
+        # nice_reply is a list containing output form API sorted in dictionary for easier use later
+        nice_reply = []
+        for m in range(len(reply) - 1):
+            nice_reply.append({})
+            for k, v in (x[1:].split('=') for x in reply[m][1:]):
+                nice_reply[m][k] = v
+        return nice_reply
 
     def close(self):
         pass
