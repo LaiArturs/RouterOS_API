@@ -2,7 +2,6 @@ import socket
 import ssl
 import hashlib
 import binascii
-import logging
 
 # Constants - Define defaults
 PORT = 8728
@@ -12,8 +11,6 @@ USER = 'admin'
 PASSWORD = ''
 
 USE_SSL = False
-DO_LOG = False
-LOG_LVL = 4  #
 VERBOSE = False  # Weather to define
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
 AUTO_RELOGIN = False
@@ -33,7 +30,7 @@ class Api:
         if self.use_ssl:
             self.sock = self.context.wrap_socket(self.sock)
 
-    def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False, log=DO_LOG, log_lvl=LOG_LVL,
+    def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
                  verbose=VERBOSE, context=CONTEXT, relogin=AUTO_RELOGIN):
 
         self.address = address
@@ -41,8 +38,6 @@ class Api:
         self.password = password
         self.use_ssl = use_ssl
         self.port = port
-        self.log = log
-        self.log_lvl = log_lvl
         self.verbose = verbose
         self.context = context
         self.relogin = relogin
@@ -81,14 +76,16 @@ class Api:
                         rcv_length = int.from_bytes(rec[:1], byteorder='big')
                         rec = rec[1:].decode('utf-8')
                     received += rec
-                # print('<<< ', received)
+                if self.verbose:
+                    print('<<< ', received)
                 if trap:  # If !trap (error) in previous word return what was the error
                     return 'Error: RouterOS API replied: ' + received.split('=')[2]
                 if received == '!trap':  # Some error occurred
                     trap = True
                 rcv_sentence.append(received)
                 rcv_length = int.from_bytes(self.sock.recv(1), byteorder='big')
-            # print('')
+            if self.verbose:
+                print('')
             return rcv_sentence
 
         # Sending part of conversation
@@ -100,7 +97,11 @@ class Api:
             length = len(word).to_bytes(1, byteorder='big')
             self.sock.sendall(length)  # Sending the length of following word
             self.sock.sendall(word.encode('utf-8'))  # Sending the word
+            if self.verbose:
+                print('>>> ', word)
         self.sock.sendall(b'\x00')  # Zero length word to mark end of the sentence
+        if self.verbose:
+            print('')
 
         # Receiving part of the conversation
 
@@ -159,4 +160,4 @@ class Api:
         return nice_reply
 
     def close(self):
-        pass
+        self.sock.close()

@@ -1,15 +1,18 @@
 routeros_api.py  -  Design Doc
 
 Features:
- - Standard API notation;
- - SSL;
- - Log;
- - Verbose;
- - Re-login and auto re-login;
- - Close connection.
+ - Standard API notation; - ok
+ - SSL; - ok
+ - Verbose; - ok
+ - Close connection. - ok
 
 Class:
     Api:
-     - login();
-     - send();
-     - close().
+     - login(); - ok
+     - talk(); - ok
+     - close(). - ok
+
+To do:
+ - Tidy code;
+ - Document code;
+ - Publish in Github;
