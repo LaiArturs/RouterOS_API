@@ -1,7 +1,0 @@
-routeros_api.py  -  Design Doc
-
-Features:
- - Standard API notation; - ok
- - SSL; - ok
- - Verbose; - ok
- - Close connection. - ok
