@@ -13,7 +13,7 @@ Python API for RouterOS. Super light, easy to use and modify.
 #### Default configuration:
 
 *Python code:*
-```
+```python
 from routeros_api import Api
 
 router = Api('192.168.88.1')
@@ -29,7 +29,7 @@ print(r)
 #### Username, password, port:
 
 *Python code:*
-```
+```python
 from routeros_api import Api
 
 router = Api('10.21.0.100', user='Bob', password='St4ong0nE', port=15811)
@@ -62,7 +62,7 @@ set [find name=api-ssl] certificate=server
 More info: [MikroTik Wiki](https://wiki.mikrotik.com/wiki/Manual:Create_Certificates).
 
 *Python code:*
-```
+```python
 from routeros_api import Api
 
 router = Api('10.21.0.100', user='SysAdmin', password='Meeseeks', verbose=True, use_ssl=True)
@@ -103,7 +103,7 @@ Argument  | Description
 `context` | `ssl instance` for creating ssl connection, default is created, but it can be adjusted.
 
 *Python code:*
-```
+```python
 router = Api(address='192.168.10.1', user='Juri', password='L0vE$aun@', 
              use_ssl=True, port=8730, verbose=False, context=ctx)
 ```
