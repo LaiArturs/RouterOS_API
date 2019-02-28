@@ -3,3 +3,4 @@ venv
 scraps
 .idea/
 design_doc
+.gitignore

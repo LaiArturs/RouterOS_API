@@ -141,5 +141,3 @@ During the creation of this project I learned about:
 * Sockets
 * SSL
 * RouterOS API
-
-This is my first GitHub project so please leave your thoughts in comments or PM.
