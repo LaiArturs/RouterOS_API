@@ -11,27 +11,14 @@ USER = 'admin'
 PASSWORD = ''
 
 USE_SSL = False
-VERBOSE = False  # Weather to define
+VERBOSE = False  # Whether to print API conversation width the router. Useful for debugging
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
-AUTO_RELOGIN = False
 
 
 class Api:
 
-    def open_socket(self):
-
-        try:
-            # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
-            # RouterOS firewall or ip services, or port is wrong.
-            self.connection = self.sock.connect((self.address, self.port))
-        except OSError as e:
-            exit(0)
-
-        if self.use_ssl:
-            self.sock = self.context.wrap_socket(self.sock)
-
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
-                 verbose=VERBOSE, context=CONTEXT, relogin=AUTO_RELOGIN):
+                 verbose=VERBOSE, context=CONTEXT):
 
         self.address = address
         self.user = user
@@ -40,7 +27,6 @@ class Api:
         self.port = port
         self.verbose = verbose
         self.context = context
-        self.relogin = relogin
 
         # Port setting logic
         if port:
@@ -53,7 +39,41 @@ class Api:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connection = None
         self.open_socket()
+        self.login()
 
+    # Open socket connection with router and wrap with SSL is needed.
+    def open_socket(self):
+
+        try:
+            # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
+            # RouterOS firewall or ip services, or port is wrong.
+            self.connection = self.sock.connect((self.address, self.port))
+        except OSError as e:
+            exit(0)
+
+        if self.use_ssl:
+            self.sock = self.context.wrap_socket(self.sock)
+
+    # Login API connection into RouterOS
+    def login(self):
+        sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
+        reply = self.communicate(sentence)
+
+        if len(reply[0]) == 1 and reply[0][0] == '!done':
+            # If login process was successful
+            return reply
+        elif 'Error' in reply:
+            # If some sort of error occurred
+            return reply
+        elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
+            # If RouterOS uses old API login method, code continues with old method
+            md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
+            md5.update(binascii.unhexlify(reply[0][1][5:]))
+            sentence = ['/login', '=name=' + self.user, '=response=00'
+                        + binascii.hexlify(md5.digest()).decode('utf-8')]
+            return self.communicate(sentence)
+
+    # Sending data to router and expecting something back
     def communicate(self, sentence):
 
         def read_sentence():
@@ -115,28 +135,8 @@ class Api:
             paragraph.append(sentence)
         return paragraph
 
-    def login(self):
-
-        sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
-        reply = self.communicate(sentence)
-
-        if len(reply[0]) == 1 and reply[0][0] == '!done':
-            return reply
-        elif 'Error' in reply:
-            return reply
-        elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
-            # If RouterOS uses old API login method, code continues with old method
-            md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
-            md5.update(binascii.unhexlify(reply[0][1][5:]))
-            sentence = ['/login', '=name=' + self.user, '=response=00'
-                        + binascii.hexlify(md5.digest()).decode('utf-8')]
-            return self.communicate(sentence)
-
+    # Initiate a conversation with the router
     def talk(self, message):
-        reply = self.login()
-        if 'Error' in reply:
-            return reply
-
         # It is possible for message to be string or list containing multiple strings
         if type(message) == str:
             return self.send(message)
@@ -150,6 +150,7 @@ class Api:
         reply = self.communicate(sentence.split())
         if 'Error' in reply:
             return reply
+
         # reply is list containing strings with RAW output form API
         # nice_reply is a list containing output form API sorted in dictionary for easier use later
         nice_reply = []
