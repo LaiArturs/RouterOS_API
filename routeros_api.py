@@ -1,3 +1,5 @@
+# Author: Arturs Laizans
+
 import socket
 import ssl
 import hashlib
@@ -13,6 +15,8 @@ PASSWORD = ''
 USE_SSL = False
 VERBOSE = False  # Whether to print API conversation width the router. Useful for debugging
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
+CONTEXT.check_hostname = False
+CONTEXT.verify_mode = ssl.CERT_NONE
 
 
 class Api:
