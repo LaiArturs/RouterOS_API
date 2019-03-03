@@ -19,6 +19,10 @@ CONTEXT.check_hostname = False
 CONTEXT.verify_mode = ssl.CERT_NONE
 
 
+class LoginError(Exception):
+    pass
+
+
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
@@ -41,6 +45,7 @@ class Api:
             self.port = PORT
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.sock.settimeout(5)  # Set socket timeout to 5 seconds
         self.connection = None
         self.open_socket()
         self.login()
@@ -52,7 +57,9 @@ class Api:
             # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
             # RouterOS firewall or ip services, or port is wrong.
             self.connection = self.sock.connect((self.address, self.port))
+
         except OSError as e:
+            print('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.address, self.port))
             exit(0)
 
         if self.use_ssl:
@@ -62,13 +69,11 @@ class Api:
     def login(self):
         sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
         reply = self.communicate(sentence)
-
         if len(reply[0]) == 1 and reply[0][0] == '!done':
             # If login process was successful
             return reply
         elif 'Error' in reply:
-            # If some sort of error occurred
-            return reply
+            raise LoginError('Login ' + reply)
         elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
             # If RouterOS uses old API login method, code continues with old method
             md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
@@ -103,7 +108,7 @@ class Api:
                 if self.verbose:
                     print('<<< ', received)
                 if trap:  # If !trap (error) in previous word return what was the error
-                    return 'Error: RouterOS API replied: ' + received.split('=')[2]
+                    return 'Error: Host: {}, RouterOS API replied: {}'.format(self.address, received.split('=')[2])
                 if received == '!trap':  # Some error occurred
                     trap = True
                 rcv_sentence.append(received)
