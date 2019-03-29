@@ -123,7 +123,19 @@ class Api:
         # First, length of the word must be sent,
         # Then, the word itself.
         for word in sentence:
-            length = len(word).to_bytes(1, byteorder='big')
+            wl = len(word)
+            # Words with lengh > 127 have to be encoded differently, check length and apply correct encoding scheme
+            if 0 <= wl <= 0x7F:
+                length = wl.to_bytes(1, byteorder='big')
+            elif 0x80 <= wl <= 0x3FFF:
+                length = (wl | 0x8000).to_bytes(2, byteorder='big')
+            elif 0x4000 <= wl <= 0x1FFFFF:
+                length = (wl | 0xC00000).to_bytes(3, byteorder='big')
+            elif 0x200000 <= wl <= 0xFFFFFFF:
+                length = (wl | 0xE0000000).to_bytes(4, byteorder='big')
+            #I'm not sure if this is correct but it only applies to word length > 268435455
+            else:
+                length = (wl & 0xFF).to_bytes(4, byteorder='big')
             self.sock.sendall(length)  # Sending the length of following word
             self.sock.sendall(word.encode('utf-8'))  # Sending the word
             if self.verbose:
