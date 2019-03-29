@@ -23,6 +23,10 @@ class LoginError(Exception):
     pass
 
 
+class WordTooLong(Exception):
+    pass
+
+
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
@@ -58,7 +62,7 @@ class Api:
             # RouterOS firewall or ip services, or port is wrong.
             self.connection = self.sock.connect((self.address, self.port))
 
-        except OSError as e:
+        except OSError:
             print('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.address, self.port))
             exit(0)
 
@@ -85,9 +89,67 @@ class Api:
     # Sending data to router and expecting something back
     def communicate(self, sentence):
 
+        # There is specific way of sending word length in RouterOS API.
+        # See RouterOS API Wiki for more info.
+        def send_length(w):
+            length_to_send = len(w)
+            if length_to_send < 0x80:
+                num_of_bytes = 1  # For words smaller than 128
+            elif length_to_send < 0x4000:
+                length_to_send += 0x8000
+                num_of_bytes = 2  # For words smaller than 16384
+            elif length_to_send < 0x200000:
+                length_to_send += 0xC00000
+                num_of_bytes = 3  # For words smaller than 2097152
+            elif length_to_send < 0x10000000:
+                length_to_send += 0xE0000000
+                num_of_bytes = 4  # For words smaller than 268435456
+            elif length_to_send < 0x100000000:
+                num_of_bytes = 4  # For words smaller than 4294967296
+                self.sock.sendall(b'\xF0')
+            else:
+                raise WordTooLong('Word is too long. Max length of word is 4294967295.')
+            self.sock.sendall(length_to_send.to_bytes(num_of_bytes, byteorder='big'))
+
+            # Actually I haven't successfully sent words larger than approx. 65520.
+            # Probably it is some RouterOS limitation of 2^16.
+
+        # The same logic applies for receiving word length from RouterOS side.
+        # See RouterOS API Wiki for more info.
+        def receive_length():
+            r = self.sock.recv(1)  # Receive the first byte of word length
+
+            # If the first byte of word is smaller than 80 (base 16),
+            # then we already received the whole length and can return it.
+            # Otherwise if it is larger, then word size is encoded in multiple bytes and we must receive them all to
+            # get the whole word size.
+            if r < b'\x80':
+                r = int.from_bytes(r, byteorder='big')
+                return r
+            elif r < b'\xc0':
+                r += self.sock.recv(1)
+                r = int.from_bytes(r, byteorder='big')
+                r -= 0x8000
+                return r
+            elif r < b'\xe0':
+                r += self.sock.recv(2)
+                r = int.from_bytes(r, byteorder='big')
+                r -= 0xC00000
+                return r
+            elif r < b'\xf0':
+                r += self.sock.recv(3)
+                r = int.from_bytes(r, byteorder='big')
+                r -= 0xE0000000
+                return r
+            elif r == b'\xf0':
+                r = self.sock.recv(4)
+                r = int.from_bytes(r, byteorder='big')
+                return r
+
         def read_sentence():
             rcv_sentence = []  # Words will be appended here
-            rcv_length = int.from_bytes(self.sock.recv(1), byteorder='big')  # Receive the length of the next word
+            rcv_length = receive_length()  # Get the size of the word
+
             trap = False  # This variable will change if there is !trap error occurred
             while rcv_length != 0:
                 received = ''
@@ -96,14 +158,7 @@ class Api:
                     if rec == b'':
                         raise RuntimeError('socket connection broken')
 
-                    # If API word from Router is too big (>127) it will send total length of
-                    # the word in begining of the first part. Because of this it can't be decoded
-                    # with .decode('utf-8').
-                    try:
-                        rec = rec.decode('utf-8')
-                    except:
-                        rcv_length = int.from_bytes(rec[:1], byteorder='big')
-                        rec = rec[1:].decode('utf-8')
+                    rec = rec.decode('utf-8')
                     received += rec
                 if self.verbose:
                     print('<<< ', received)
@@ -112,7 +167,7 @@ class Api:
                 if received == '!trap':  # Some error occurred
                     trap = True
                 rcv_sentence.append(received)
-                rcv_length = int.from_bytes(self.sock.recv(1), byteorder='big')
+                rcv_length = receive_length()  # Get the size of the next word
             if self.verbose:
                 print('')
             return rcv_sentence
@@ -123,24 +178,11 @@ class Api:
         # First, length of the word must be sent,
         # Then, the word itself.
         for word in sentence:
-            wl = len(word)
-            # Words with lengh > 127 have to be encoded differently, check length and apply correct encoding scheme
-            if 0 <= wl <= 0x7F:
-                length = wl.to_bytes(1, byteorder='big')
-            elif 0x80 <= wl <= 0x3FFF:
-                length = (wl | 0x8000).to_bytes(2, byteorder='big')
-            elif 0x4000 <= wl <= 0x1FFFFF:
-                length = (wl | 0xC00000).to_bytes(3, byteorder='big')
-            elif 0x200000 <= wl <= 0xFFFFFFF:
-                length = (wl | 0xE0000000).to_bytes(4, byteorder='big')
-            #I'm not sure if this is correct but it only applies to word length > 268435455
-            else:
-                length = (wl & 0xFF).to_bytes(4, byteorder='big')
-            self.sock.sendall(length)  # Sending the length of following word
+            send_length(word)
             self.sock.sendall(word.encode('utf-8'))  # Sending the word
             if self.verbose:
                 print('>>> ', word)
-        self.sock.sendall(b'\x00')  # Zero length word to mark end of the sentence
+        self.sock.sendall(b'\x00')  # Send zero length word to mark end of the sentence
         if self.verbose:
             print('')
 
