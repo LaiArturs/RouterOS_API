@@ -114,21 +114,22 @@ To send commands to router use *talk()* method of *Api* class. *talk()* take one
 
 Argument  | Description
 ----------|------------
-`message` | `str` or `list` of strings. It is possible to send multiple commands bundled in a list.
+`message` | `str`, `tuple` or `list` of strings or tuples. It is possible to send multiple commands bundled in a list.
 
 *Python code:*
 ```python
-message = [
-    '/ip/address/add\n=address=192.168.30.1/24\n=interface=ether2',
-    '/interface/wireless/monitor\n=numbers=0\n=once='
-]
+message = [('/system/note/set', '=note=Multi line\nnote for the Router!'), '/system/note/print']
 r = router.talk(message)
 print(r)
 ```
 *Output:*
 ```
-[[], [{'status': 'searching-for-network', 'authenticated-clients': '0', 'notify-external-fdb': 'false'}]]
+[[], [{'show-at-login': 'true', 'note': 'Multi line\nnote for the Router!'}]]
 ```
+
+If property values you want to send to router contains spaces or linebreaks, sentence must be divided in words and then
+passed to talk() as `tuple`. 
+
 Method *talk()* returns `list` containing replies from router. In this case there are two replies, because *message* 
 contained two sentences. Actions like *set*, *add*, *enable* etc. usually returns empty list, however, *print*, *monitor*
 and others returns `list` with `dict` inside containing reply from router.
