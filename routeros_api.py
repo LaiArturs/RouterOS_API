@@ -14,6 +14,7 @@ PASSWORD = ''
 
 USE_SSL = False
 VERBOSE = False  # Whether to print API conversation width the router. Useful for debugging
+
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
 CONTEXT.check_hostname = False
 CONTEXT.verify_mode = ssl.CERT_NONE
@@ -200,17 +201,24 @@ class Api:
 
     # Initiate a conversation with the router
     def talk(self, message):
-        # It is possible for message to be string or list containing multiple strings
-        if type(message) == str:
+
+        # It is possible for message to be string, tuple or list containing multiple strings or tuples
+        if type(message) == str or type(message) == tuple:
             return self.send(message)
         elif type(message) == list:
             reply = []
             for sentence in message:
                 reply.append(self.send(sentence))
             return reply
+        else:
+            raise TypeError('talk() argument must be str or tuple containing str or list containing str or tuples')
 
     def send(self, sentence):
-        reply = self.communicate(sentence.split())
+        # If sentence is string, not tuples of strings, it must be divided in words
+        if type(sentence) == str:
+            sentence = sentence.split()
+        reply = self.communicate(sentence)
+
         if 'Error' in reply:
             return reply
 
