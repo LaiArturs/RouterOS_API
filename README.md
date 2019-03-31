@@ -128,7 +128,8 @@ print(r)
 ```
 
 If property values you want to send to router contains spaces or linebreaks, sentence must be divided in words and then
-passed to talk() as `tuple`. 
+passed to talk() as `tuple`. Otherwise you can send sentences as strings and it will be divided in words where there is 
+space or linebreak.
 
 Method *talk()* returns `list` containing replies from router. In this case there are two replies, because *message* 
 contained two sentences. Actions like *set*, *add*, *enable* etc. usually returns empty list, however, *print*, *monitor*
