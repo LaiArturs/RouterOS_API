@@ -4,6 +4,7 @@ import socket
 import ssl
 import hashlib
 import binascii
+import verbose as verbose_package
 
 # Constants - Define defaults
 PORT = 8728
@@ -13,7 +14,10 @@ USER = 'admin'
 PASSWORD = ''
 
 USE_SSL = False
+
 VERBOSE = False  # Whether to print API conversation width the router. Useful for debugging
+VERBOSE_LOGIC = 'AND'  # Whether to print and save verbose log to file. AND - print and save, OR - do only one.
+VERBOSE_FILE_MODE = 'a'  # Weather to create new file ('w') for log or append to old one ('a').
 
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
 CONTEXT.check_hostname = False
@@ -49,11 +53,17 @@ class Api:
         else:
             self.port = PORT
 
+        self.log = verbose_package.Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
+        self.log('')
+        self.log('#-----------------------------------------------#')
+        self.log('API IP - {}, USER - {}'.format(address, user))
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # self.sock.settimeout(5)  # Set socket timeout to 5 seconds
         self.connection = None
         self.open_socket()
         self.login()
+        self.log('Instance of Api created')
 
     # Open socket connection with router and wrap with SSL is needed.
     def open_socket(self):
@@ -70,21 +80,27 @@ class Api:
         if self.use_ssl:
             self.sock = self.context.wrap_socket(self.sock)
 
+        self.log('API socket connection opened.')
+
     # Login API connection into RouterOS
     def login(self):
         sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
         reply = self.communicate(sentence)
         if len(reply[0]) == 1 and reply[0][0] == '!done':
             # If login process was successful
+            self.log('Logged in successfully!')
             return reply
         elif 'Error' in reply:
+            self.log('Error in login process - {}'.format(reply))
             raise LoginError('Login ' + reply)
         elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
             # If RouterOS uses old API login method, code continues with old method
+            self.log('Using old login process.')
             md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
             md5.update(binascii.unhexlify(reply[0][1][5:]))
             sentence = ['/login', '=name=' + self.user, '=response=00'
                         + binascii.hexlify(md5.digest()).decode('utf-8')]
+            self.log('Logged in successfully!')
             return self.communicate(sentence)
 
     # Sending data to router and expecting something back
@@ -161,16 +177,14 @@ class Api:
 
                     rec = rec.decode('utf-8')
                     received += rec
-                if self.verbose:
-                    print('<<< ', received)
+                self.log('<<< {}'.format(received))
                 if trap:  # If !trap (error) in previous word return what was the error
                     return 'Error: Host: {}, RouterOS API replied: {}'.format(self.address, received.split('=')[2])
                 if received == '!trap':  # Some error occurred
                     trap = True
                 rcv_sentence.append(received)
                 rcv_length = receive_length()  # Get the size of the next word
-            if self.verbose:
-                print('')
+            self.log('')
             return rcv_sentence
 
         # Sending part of conversation
@@ -181,11 +195,9 @@ class Api:
         for word in sentence:
             send_length(word)
             self.sock.sendall(word.encode('utf-8'))  # Sending the word
-            if self.verbose:
-                print('>>> ', word)
+            self.log('>>> {}'.format(word))
         self.sock.sendall(b'\x00')  # Send zero length word to mark end of the sentence
-        if self.verbose:
-            print('')
+        self.log('')
 
         # Receiving part of the conversation
 
