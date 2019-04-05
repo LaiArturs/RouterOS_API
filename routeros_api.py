@@ -16,8 +16,8 @@ PASSWORD = ''
 USE_SSL = False
 
 VERBOSE = False  # Whether to print API conversation width the router. Useful for debugging
-VERBOSE_LOGIC = 'AND'  # Whether to print and save verbose log to file. AND - print and save, OR - do only one.
-VERBOSE_FILE_MODE = 'a'  # Weather to create new file ('w') for log or append to old one ('a').
+VERBOSE_LOGIC = 'OR'  # Whether to print and save verbose log to file. AND - print and save, OR - do only one.
+VERBOSE_FILE_MODE = 'w'  # Weather to create new file ('w') for log or append to old one ('a').
 
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
 CONTEXT.check_hostname = False
