@@ -53,6 +53,7 @@ class Api:
         else:
             self.port = PORT
 
+        # Create Log instance to save or print verbose logs
         self.log = verbose_package.Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
         self.log('')
         self.log('#-----------------------------------------------#')
@@ -91,10 +92,11 @@ class Api:
             self.log('Logged in successfully!')
             return reply
         elif 'Error' in reply:
+            # Else if there was some kind of error during login process
             self.log('Error in login process - {}'.format(reply))
             raise LoginError('Login ' + reply)
         elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
-            # If RouterOS uses old API login method, code continues with old method
+            # Else if RouterOS uses old API login method, code continues with old method
             self.log('Using old login process.')
             md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
             md5.update(binascii.unhexlify(reply[0][1][5:]))
