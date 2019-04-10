@@ -32,6 +32,9 @@ class WordTooLong(Exception):
     pass
 
 
+class CreateSocketError(Exception):
+    pass
+
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
@@ -75,8 +78,8 @@ class Api:
             self.connection = self.sock.connect((self.address, self.port))
 
         except OSError:
-            print('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.address, self.port))
-            exit(0)
+            raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.address,
+                                                                                                         self.port))
 
         if self.use_ssl:
             self.sock = self.context.wrap_socket(self.sock)
