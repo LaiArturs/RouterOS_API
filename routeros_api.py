@@ -35,6 +35,7 @@ class WordTooLong(Exception):
 class CreateSocketError(Exception):
     pass
 
+
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
