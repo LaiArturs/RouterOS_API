@@ -4,7 +4,7 @@ import socket
 import ssl
 import hashlib
 import binascii
-import verbose as verbose_package
+from verbose import Log
 
 # Constants - Define defaults
 PORT = 8728
@@ -58,7 +58,7 @@ class Api:
             self.port = PORT
 
         # Create Log instance to save or print verbose logs
-        self.log = verbose_package.Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
+        self.log = Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
         self.log('')
         self.log('#-----------------------------------------------#')
         self.log('API IP - {}, USER - {}'.format(address, user))
