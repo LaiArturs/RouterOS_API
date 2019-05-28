@@ -146,28 +146,26 @@ class Api:
             # then we already received the whole length and can return it.
             # Otherwise if it is larger, then word size is encoded in multiple bytes and we must receive them all to
             # get the whole word size.
+
             if r < b'\x80':
                 r = int.from_bytes(r, byteorder='big')
-                return r
             elif r < b'\xc0':
                 r += self.sock.recv(1)
                 r = int.from_bytes(r, byteorder='big')
                 r -= 0x8000
-                return r
             elif r < b'\xe0':
                 r += self.sock.recv(2)
                 r = int.from_bytes(r, byteorder='big')
                 r -= 0xC00000
-                return r
             elif r < b'\xf0':
                 r += self.sock.recv(3)
                 r = int.from_bytes(r, byteorder='big')
                 r -= 0xE0000000
-                return r
             elif r == b'\xf0':
                 r = self.sock.recv(4)
                 r = int.from_bytes(r, byteorder='big')
-                return r
+
+            return r
 
         def read_sentence():
             rcv_sentence = []  # Words will be appended here
@@ -175,14 +173,14 @@ class Api:
 
             trap = False  # This variable will change if there is !trap error occurred
             while rcv_length != 0:
-                received = ''
+                received = b''
                 while rcv_length > len(received):
                     rec = self.sock.recv(rcv_length - len(received))
                     if rec == b'':
                         raise RuntimeError('socket connection broken')
-
-                    rec = rec.decode('utf-8')
+                    rec = rec
                     received += rec
+                received = received.decode('utf-8')
                 self.log('<<< {}'.format(received))
                 if trap:  # If !trap (error) in previous word return what was the error
                     return 'Error: Host: {}, RouterOS API replied: {}'.format(self.address, received.split('=')[2])
