@@ -36,6 +36,10 @@ class CreateSocketError(Exception):
     pass
 
 
+class RouterOSTrapError(Exception):
+    pass
+
+
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
@@ -110,7 +114,7 @@ class Api:
             return self.communicate(sentence)
 
     # Sending data to router and expecting something back
-    def communicate(self, sentence):
+    def communicate(self, sentence_to_send):
 
         # There is specific way of sending word length in RouterOS API.
         # See RouterOS API Wiki for more info.
@@ -171,7 +175,6 @@ class Api:
             rcv_sentence = []  # Words will be appended here
             rcv_length = receive_length()  # Get the size of the word
 
-            trap = False  # This variable will change if there is !trap error occurred
             while rcv_length != 0:
                 received = b''
                 while rcv_length > len(received):
@@ -182,10 +185,6 @@ class Api:
                     received += rec
                 received = received.decode('utf-8')
                 self.log('<<< {}'.format(received))
-                if trap:  # If !trap (error) in previous word return what was the error
-                    return 'Error: Host: {}, RouterOS API replied: {}'.format(self.address, received.split('=')[2])
-                if received == '!trap':  # Some error occurred
-                    trap = True
                 rcv_sentence.append(received)
                 rcv_length = receive_length()  # Get the size of the next word
             self.log('')
@@ -196,7 +195,7 @@ class Api:
         # Each word must be sent separately.
         # First, length of the word must be sent,
         # Then, the word itself.
-        for word in sentence:
+        for word in sentence_to_send:
             send_length(word)
             self.sock.sendall(word.encode('utf-8'))  # Sending the word
             self.log('>>> {}'.format(word))
@@ -205,14 +204,13 @@ class Api:
 
         # Receiving part of the conversation
 
-        # Will continue receiving until receives '!done' or some kind of error.
+        # Will continue receiving until receives '!done' or some kind of error (!trap).
         # Everything will be appended to paragraph variable, and then returned.
         paragraph = []
-        while sentence[0] != '!done':
-            sentence = read_sentence()
-            if 'Error' in sentence:
-                return sentence
-            paragraph.append(sentence)
+        received_sentence = ['']
+        while received_sentence[0] != '!done':
+            received_sentence = read_sentence()
+            paragraph.append(received_sentence)
         return paragraph
 
     # Initiate a conversation with the router
@@ -235,15 +233,18 @@ class Api:
             sentence = sentence.split()
         reply = self.communicate(sentence)
 
-        if 'Error' in reply:
-            return reply
+        # If RouterOS returns error from command that was sent
+        if '!trap' in reply[0][0]:
+            # You can comment following line out if you don't want to raise an error in case of !trap
+            raise RouterOSTrapError("\nCommand: {}\nReturned an error: {}".format(sentence, reply))
+            pass
 
         # reply is list containing strings with RAW output form API
         # nice_reply is a list containing output form API sorted in dictionary for easier use later
         nice_reply = []
         for m in range(len(reply) - 1):
             nice_reply.append({})
-            for k, v in (x[1:].split('=') for x in reply[m][1:]):
+            for k, v in (x[1:].split('=', 1) for x in reply[m][1:]):
                 nice_reply[m][k] = v
         return nice_reply
 
