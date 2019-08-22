@@ -73,6 +73,7 @@ class Api:
         self.open_socket()
         self.login()
         self.log('Instance of Api created')
+        self.is_alive()
 
     # Open socket connection with router and wrap with SSL is needed.
     def open_socket(self):
@@ -247,6 +248,23 @@ class Api:
             for k, v in (x[1:].split('=', 1) for x in reply[m][1:]):
                 nice_reply[m][k] = v
         return nice_reply
+
+    def is_alive(self):
+        """Check if socket is alive and router responds"""
+
+        self.sock.settimeout(2)
+
+        try:
+            self.talk('/system/identity/print')
+
+        except socket.timeout:
+            self.log("Router does not respond, closing socket")
+            self.close()
+            return False
+
+        self.log("Router responds")
+        self.sock.settimeout(None)
+        return True
 
     def close(self):
         self.sock.close()
