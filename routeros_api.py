@@ -66,17 +66,18 @@ class Api:
         self.log('')
         self.log('#-----------------------------------------------#')
         self.log('API IP - {}, USER - {}'.format(address, user))
-
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.sock.settimeout(5)  # Set socket timeout to 5 seconds
+        self.sock = None
         self.connection = None
         self.open_socket()
         self.login()
         self.log('Instance of Api created')
         self.is_alive()
 
-    # Open socket connection with router and wrap with SSL is needed.
+    # Open socket connection with router and wrap with SSL if needed.
     def open_socket(self):
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.sock.settimeout(5)  # Set socket timeout to 5 seconds, default is None
 
         try:
             # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
@@ -249,7 +250,7 @@ class Api:
                 nice_reply[m][k] = v
         return nice_reply
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         """Check if socket is alive and router responds"""
 
         self.sock.settimeout(2)
@@ -265,6 +266,15 @@ class Api:
         self.log("Router responds")
         self.sock.settimeout(None)
         return True
+
+    def create_connection(self):
+        """Create API connection
+
+        1. Open socket
+        2. Log into router
+        """
+        self.open_socket()
+        self.login()
 
     def close(self):
         self.sock.close()
