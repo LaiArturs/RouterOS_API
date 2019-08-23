@@ -253,17 +253,23 @@ class Api:
     def is_alive(self) -> bool:
         """Check if socket is alive and router responds"""
 
-        self.sock.settimeout(2)
+        # Check if socket is open in this end
+        try:
+            self.sock.settimeout(2)
+        except OSError:
+            self.log("Socket is closed.")
+            return False
 
+        # Check if we can send and receive through socket
         try:
             self.talk('/system/identity/print')
 
         except (socket.timeout, IndexError, BrokenPipeError):
-            self.log("Router does not respond, closing socket")
+            self.log("Router does not respond, closing socket.")
             self.close()
             return False
 
-        self.log("Router responds")
+        self.log("Socket is open, router responds.")
         self.sock.settimeout(None)
         return True
 
