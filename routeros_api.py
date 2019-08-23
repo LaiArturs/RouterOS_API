@@ -258,7 +258,7 @@ class Api:
         try:
             self.talk('/system/identity/print')
 
-        except (socket.timeout, IndexError):
+        except (socket.timeout, IndexError, BrokenPipeError):
             self.log("Router does not respond, closing socket")
             self.close()
             return False
