@@ -185,7 +185,7 @@ class Api:
                         raise RuntimeError('socket connection broken')
                     rec = rec
                     received += rec
-                received = received.decode('utf-8')
+                received = received.decode('utf-8', 'backslashreplace')
                 self.log('<<< {}'.format(received))
                 rcv_sentence.append(received)
                 rcv_length = receive_length()  # Get the size of the next word
