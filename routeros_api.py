@@ -76,13 +76,16 @@ class Api:
     # Open socket connection with router and wrap with SSL if needed.
     def open_socket(self):
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        for res in socket.getaddrinfo(self.address, self.port, socket.AF_UNSPEC, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+
+        self.sock = socket.socket(af, socket.SOCK_STREAM)
         # self.sock.settimeout(5)  # Set socket timeout to 5 seconds, default is None
 
         try:
             # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
             # RouterOS firewall or ip services, or port is wrong.
-            self.connection = self.sock.connect((self.address, self.port))
+            self.connection = self.sock.connect(sa)
 
         except OSError:
             raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.address,
