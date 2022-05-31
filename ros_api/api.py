@@ -4,7 +4,8 @@ import socket
 import ssl
 import hashlib
 import binascii
-from .verbose import Log
+
+from . import _log
 
 # Constants - Define defaults
 PORT = 8728
@@ -62,7 +63,7 @@ class Api:
             self.port = PORT
 
         # Create Log instance to save or print verbose logs
-        self.log = Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
+        self.log = _log.Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
         self.log('')
         self.log('#-----------------------------------------------#')
         self.log('API IP - {}, USER - {}'.format(address, user))
@@ -186,7 +187,6 @@ class Api:
                     rec = self.sock.recv(rcv_length - len(received))
                     if rec == b'':
                         raise RuntimeError('socket connection broken')
-                    rec = rec
                     received += rec
                 received = received.decode('utf-8', 'backslashreplace')
                 self.log('<<< {}'.format(received))

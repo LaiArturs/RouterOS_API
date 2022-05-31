@@ -1,6 +1,10 @@
 # RouterOS API
 
-Python API for RouterOS. Super light, easy to use and modify.
+Python API for MikroTik RouterOS. Simple and easy to use.
+
+> **WARNING** for old users: 
+> 
+> Project has changes it's structure and import signature.
 
 #### Features:
 * Easy to use;
@@ -8,15 +12,21 @@ Python API for RouterOS. Super light, easy to use and modify.
 * SSL;
 * Verbose.
 
+## Installation
+
+```sh
+python -m pip install laiarturs-ros_api
+```
+
 ## Usage:
 
 #### Default configuration:
 
 *Python code:*
 ```python
-from routeros_api import Api
+import ros_api
 
-router = Api('192.168.88.1')
+router = ros_api.Api('192.168.88.1')
 r = router.talk('/system/identity/print')
 print(r)
 ```
@@ -30,9 +40,9 @@ print(r)
 
 *Python code:*
 ```python
-from routeros_api import Api
+import ros_api
 
-router = Api('10.21.0.100', user='Bob', password='St4ong0nE', port=15811)
+router = ros_api.Api('10.21.0.100', user='Bob', password='St4ong0nE', port=15811)
 r = router.talk('/ip/address/print')
 print(r)
 ```
@@ -63,9 +73,9 @@ More info: [MikroTik Wiki](https://wiki.mikrotik.com/wiki/Manual:Create_Certific
 
 *Python code:*
 ```python
-from routeros_api import Api
+import ros_api
 
-router = Api('10.21.0.100', user='SysAdmin', password='Meeseeks', verbose=True, use_ssl=True)
+router = ros_api.Api('10.21.0.100', user='SysAdmin', password='Meeseeks', verbose=True, use_ssl=True)
 r = router.talk('/interface/wireless/enable\n=numbers=0')
 print(r)
 ```
@@ -136,10 +146,3 @@ contained two sentences. Actions like *set*, *add*, *enable* etc. usually return
 and others returns `list` with `dict` inside containing reply from router.
 
 Messages use RouterOS API syntax. More info: [MikroTik Wiki](https://wiki.mikrotik.com/wiki/Manual:API).
-
-## Conclusion
-
-During the creation of this project I learned about:
-* Sockets
-* SSL
-* RouterOS API

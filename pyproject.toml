@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "laiarturs-ros_api"
+version = "0.0.1"
+description = "Connect to and use API interface of MikroTik RouterOS"
+readme = "README.md"
+authors = [{ name = "Arturs Laizans" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "Topic :: System :: Networking",
+]
+keywords = ["MikroTik", "RouterOS", "router", "API"]
+dependencies = []
+requires-python = ">=3.4"
+
+[project.optional-dependencies]
+dev = ["bump2version"]
+
+[project.urls]
+Homepage = "https://github.com/DEssMALA/RouterOS_API"
