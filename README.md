@@ -12,6 +12,8 @@ Python API for MikroTik RouterOS. Simple and easy to use.
 * SSL;
 * Verbose.
 
+Find this project on [PyPI.org](https://pypi.org/project/laiarturs-ros-api/).
+
 ## Installation
 
 ```sh
