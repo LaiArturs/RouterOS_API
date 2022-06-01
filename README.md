@@ -17,7 +17,7 @@ Find this project on [PyPI.org](https://pypi.org/project/laiarturs-ros-api/).
 ## Installation
 
 ```sh
-python -m pip install laiarturs-ros_api
+python -m pip install laiarturs-ros-api
 ```
 
 ## Usage:
