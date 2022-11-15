@@ -84,8 +84,7 @@ class Api:
             af, socktype, proto, canonname, sa = res
 
         self.sock = socket.socket(af, socket.SOCK_STREAM)
-        if self.timeout is not None:
-            self.sock.settimeout(self.timeout)  # Set socket timeout, default is None
+        self.sock.settimeout(self.timeout)  # Set socket timeout, default is None
 
         try:
             # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
