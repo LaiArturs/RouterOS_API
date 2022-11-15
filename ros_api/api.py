@@ -24,6 +24,8 @@ CONTEXT = ssl.create_default_context()  # It is possible to predefine context fo
 CONTEXT.check_hostname = False
 CONTEXT.verify_mode = ssl.CERT_NONE
 
+TIMEOUT = None
+
 
 class LoginError(Exception):
     pass
@@ -44,7 +46,7 @@ class RouterOSTrapError(Exception):
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
-                 verbose=VERBOSE, context=CONTEXT):
+                 verbose=VERBOSE, context=CONTEXT, timeout=TIMEOUT):
 
         self.address = address
         self.user = user
@@ -53,6 +55,7 @@ class Api:
         self.port = port
         self.verbose = verbose
         self.context = context
+        self.timeout = timeout
 
         # Port setting logic
         if port:
@@ -74,14 +77,15 @@ class Api:
         self.log('Instance of Api created')
         self.is_alive()
 
-    # Open socket connection with router and wrap with SSL if needed.
     def open_socket(self):
+        """Open socket connection with router and wrap with SSL if needed."""
 
         for res in socket.getaddrinfo(self.address, self.port, socket.AF_UNSPEC, socket.SOCK_STREAM):
             af, socktype, proto, canonname, sa = res
 
         self.sock = socket.socket(af, socket.SOCK_STREAM)
-        # self.sock.settimeout(5)  # Set socket timeout to 5 seconds, default is None
+        if self.timeout is not None:
+            self.sock.settimeout(self.timeout)  # Set socket timeout, default is None
 
         try:
             # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
@@ -97,8 +101,9 @@ class Api:
 
         self.log('API socket connection opened.')
 
-    # Login API connection into RouterOS
     def login(self):
+        """Login API connection into RouterOS."""
+
         sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
         reply = self.communicate(sentence)
         if len(reply[0]) == 1 and reply[0][0] == '!done':
@@ -119,8 +124,8 @@ class Api:
             self.log('Logged in successfully!')
             return self.communicate(sentence)
 
-    # Sending data to router and expecting something back
     def communicate(self, sentence_to_send):
+        """Sending data to router and expecting something back."""
 
         # There is specific way of sending word length in RouterOS API.
         # See RouterOS API Wiki for more info.
@@ -147,9 +152,11 @@ class Api:
             # Actually I haven't successfully sent words larger than approx. 65520.
             # Probably it is some RouterOS limitation of 2^16.
 
-        # The same logic applies for receiving word length from RouterOS side.
-        # See RouterOS API Wiki for more info.
         def receive_length():
+            """The same logic applies for receiving word length from RouterOS side.
+            See RouterOS API Wiki for more info.
+            """
+
             r = self.sock.recv(1)  # Receive the first byte of word length
 
             # If the first byte of word is smaller than 80 (base 16),
@@ -218,8 +225,8 @@ class Api:
             paragraph.append(received_sentence)
         return paragraph
 
-    # Initiate a conversation with the router
     def talk(self, message):
+        """Initiate a conversation with the router."""
 
         # It is possible for message to be string, tuple or list containing multiple strings or tuples
         if type(message) == str or type(message) == tuple:
@@ -254,7 +261,7 @@ class Api:
         return nice_reply
 
     def is_alive(self) -> bool:
-        """Check if socket is alive and router responds"""
+        """Check if socket is alive and router responds."""
 
         # Check if socket is open in this end
         try:
@@ -273,7 +280,7 @@ class Api:
             return False
 
         self.log("Socket is open, router responds.")
-        self.sock.settimeout(None)
+        self.sock.settimeout(self.timeout)
         return True
 
     def create_connection(self):

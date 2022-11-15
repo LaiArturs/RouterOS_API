@@ -25,6 +25,7 @@ python -m pip install laiarturs-ros-api
 #### Default configuration:
 
 *Python code:*
+
 ```python
 import ros_api
 
@@ -34,6 +35,7 @@ print(r)
 ```
 
 *Output:*
+
 ```
 [{'name': 'MikroTik'}]
 ```
@@ -41,6 +43,7 @@ print(r)
 #### Username, password, port:
 
 *Python code:*
+
 ```python
 import ros_api
 
@@ -104,20 +107,22 @@ Python3 module *routeros_api.py* contains class *Api*.
 By initialising this class it creates socket, connects and logs in.
 *Api* class *\_\_init__()* arguments:
 
-Argument  | Description
-----------|------------
-`address` | `str` of IP address or host of RouterOS router on which it can be reached.
-`user`    | `str` of username on router, *default='admin'*.
-`password`| `str` of password of user on router, *default=''*.
-`use_ssl` | `bool` whether to use SSL, *default=False*.
-`port`    | `int` on which port to connect to router, *default=8728*, *ssl default=8729*.
-`verbose` | `bool` whether to print conversation with router, *default=False*.
-`context` | `ssl instance` for creating ssl connection, default is created, but it can be adjusted.
+ Argument   | Description                                                  
+ ---------- | ------------------------------------------------------------ 
+ `address`  | `str` of IP address or host of RouterOS router on which it can be reached. 
+ `user`     | `str` of username on router, *default='admin'*.              
+ `password` | `str` of password of user on router, *default=''*.           
+ `use_ssl`  | `bool` whether to use SSL, *default=False*.                  
+ `port`     | `int` on which port to connect to router, *default=8728*, *ssl default=8729*. 
+ `verbose`  | `bool` whether to print conversation with router, *default=False*. 
+ `context`  | `ssl instance` for creating ssl connection, default is created, but it can be adjusted. 
+ `timeout`  | `float` timeout in seconds on blocking socket operations, *default=None* and the socket is put in blocking mode. 
 
 *Python code:*
+
 ```python
 router = Api(address='192.168.10.1', user='Juri', password='L0vE$aun@', 
-             use_ssl=True, port=8730, verbose=False, context=ctx)
+             use_ssl=True, port=8730, verbose=False, context=ctx, timeout=0.5)
 ```
 
 #### talk()
