@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
+requires = ["setuptools>=61.1.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "laiarturs-ros_api"
-version = "1.0.0"
+version = "1.1.0"
 description = "Connect to and use API interface of MikroTik RouterOS"
 readme = "README.md"
 authors = [{ name = "Arturs Laizans" }]
