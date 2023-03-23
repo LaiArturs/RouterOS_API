@@ -113,11 +113,12 @@ Argument  | Description
 `port`    | `int` on which port to connect to router, *default=8728*, *ssl default=8729*.
 `verbose` | `bool` whether to print conversation with router, *default=False*.
 `context` | `ssl instance` for creating ssl connection, default is created, but it can be adjusted.
+`timeout` | `float` in seconds to set timeout on socket blocking operations, *default=None*.
 
 *Python code:*
 ```python
 router = Api(address='192.168.10.1', user='Juri', password='L0vE$aun@', 
-             use_ssl=True, port=8730, verbose=False, context=ctx)
+             use_ssl=True, port=8730, verbose=False, context=ctx, timeout=1)
 ```
 
 #### talk()

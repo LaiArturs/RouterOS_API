@@ -20,6 +20,8 @@ VERBOSE = False  # Whether to print API conversation width the router. Useful fo
 VERBOSE_LOGIC = 'OR'  # Whether to print and save verbose log to file. AND - print and save, OR - do only one.
 VERBOSE_FILE_MODE = 'w'  # Weather to create new file ('w') for log or append to old one ('a').
 
+TIMEOUT = None  # Whether to use timeout for socket connection
+
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
 CONTEXT.check_hostname = False
 CONTEXT.verify_mode = ssl.CERT_NONE
@@ -44,7 +46,7 @@ class RouterOSTrapError(Exception):
 class Api:
 
     def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
-                 verbose=VERBOSE, context=CONTEXT):
+                 verbose=VERBOSE, context=CONTEXT, timeout=TIMEOUT):
 
         self.address = address
         self.user = user
@@ -53,6 +55,7 @@ class Api:
         self.port = port
         self.verbose = verbose
         self.context = context
+        self.timeout = timeout
 
         # Port setting logic
         if port:
@@ -81,7 +84,7 @@ class Api:
             af, socktype, proto, canonname, sa = res
 
         self.sock = socket.socket(af, socket.SOCK_STREAM)
-        # self.sock.settimeout(5)  # Set socket timeout to 5 seconds, default is None
+        self.sock.settimeout(self.timeout)
 
         try:
             # Trying to connect to RouterOS, error can occur if IP address is not reachable, or API is blocked in
@@ -273,7 +276,7 @@ class Api:
             return False
 
         self.log("Socket is open, router responds.")
-        self.sock.settimeout(None)
+        self.sock.settimeout(self.timeout)
         return True
 
     def create_connection(self):
