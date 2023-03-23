@@ -102,25 +102,41 @@ class Api:
 
     # Login API connection into RouterOS
     def login(self):
-        sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
-        reply = self.communicate(sentence)
-        if len(reply[0]) == 1 and reply[0][0] == '!done':
-            # If login process was successful
-            self.log('Logged in successfully!')
-            return reply
-        elif 'Error' in reply:
-            # Else if there was some kind of error during login process
-            self.log('Error in login process - {}'.format(reply))
-            raise LoginError('Login ' + reply)
-        elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
-            # Else if RouterOS uses old API login method, code continues with old method
+
+        def reply_has_error(reply):
+            # Check if reply contains login error 
+            if len(reply[0]) == 2 and reply[0][0] == '!trap':
+                return True
+            else:
+                return False
+        
+        def process_old_login(reply):
+            # RouterOS uses old API login method, code continues with old method
             self.log('Using old login process.')
             md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
             md5.update(binascii.unhexlify(reply[0][1][5:]))
             sentence = ['/login', '=name=' + self.user, '=response=00'
                         + binascii.hexlify(md5.digest()).decode('utf-8')]
             self.log('Logged in successfully!')
-            return self.communicate(sentence)
+            reply = self.communicate(sentence)
+            return check_reply(reply)
+        
+        def check_reply(reply):
+            if len(reply[0]) == 1 and reply[0][0] == '!done':
+                # If login process was successful
+                self.log('Logged in successfully!')
+                return reply
+            elif reply_has_error(reply):
+                self.log(f'Error in login process: {reply[0][1]}')
+                raise LoginError(reply)
+            elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
+                return process_old_login(reply)
+            else:
+                raise LoginError(f'Unexpected reply to login: {reply}')
+
+        sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
+        reply = self.communicate(sentence)
+        return check_reply(reply)
 
     # Sending data to router and expecting something back
     def communicate(self, sentence_to_send):
